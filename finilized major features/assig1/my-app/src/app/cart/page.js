@@ -1,27 +1,31 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert"; // Directly import the Alert component
+import Alert from "@mui/material/Alert";
 import Navbar from "../components/Navbar";
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
-  const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar visibility state
-  const [snackbarMessage, setSnackbarMessage] = useState(""); // Snackbar message
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // Snackbar severity
-  const email = sessionStorage.getItem("email");
-  const router = useRouter(); // Initialize the router
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const [email, setEmail] = useState(null); // Use state for `email`
+  const router = useRouter();
 
-  // Fetch cart items on component mount
+  // Fetch email on mount
   useEffect(() => {
-    if (!email) {
-      console.error("No email found in session storage");
-      return;
+    if (typeof window !== "undefined") {
+      setEmail(sessionStorage.getItem("email"));
     }
+  }, []);
+
+  // Fetch cart items on email change
+  useEffect(() => {
+    if (!email) return;
 
     fetch(`/api/cart?email=${email}`)
       .then((res) => {
@@ -32,12 +36,8 @@ export default function CartPage() {
       .catch((error) => console.error("Error fetching cart:", error));
   }, [email]);
 
-  // Handle Snackbar close
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
-  };
+  const handleSnackbarClose = () => setSnackbarOpen(false);
 
-  // Update cart item quantity
   const updateCart = (product, action) => {
     fetch("/api/cart", {
       method: "POST",
@@ -46,7 +46,6 @@ export default function CartPage() {
     })
       .then((res) => res.json())
       .then((data) => {
-        // Show Snackbar Feedback
         setSnackbarMessage(
           action === "increment"
             ? `Added another ${product.pname} to your cart!`
@@ -55,7 +54,6 @@ export default function CartPage() {
         setSnackbarSeverity("success");
         setSnackbarOpen(true);
 
-        // Refresh the cart items
         fetch(`/api/cart?email=${email}`)
           .then((res) => res.json())
           .then((data) => setCartItems(data || []));
@@ -68,15 +66,11 @@ export default function CartPage() {
       });
   };
 
-  // Navigate to checkout page
-  const proceedToCheckout = () => {
-    router.push("/checkout"); // Redirect to the checkout page
-  };
+  const proceedToCheckout = () => router.push("/checkout");
 
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Navbar />
-
       <Box sx={{ p: 2 }}>
         <Typography variant="h4" gutterBottom>
           Your Cart
@@ -125,14 +119,12 @@ export default function CartPage() {
             variant="contained"
             color="primary"
             sx={{ mt: 2 }}
-            onClick={proceedToCheckout} // Call the navigate function
+            onClick={proceedToCheckout}
           >
             Proceed to Checkout
           </Button>
         )}
       </Box>
-
-      {/* Snackbar for feedback */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
